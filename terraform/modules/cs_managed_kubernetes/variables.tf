@@ -1,0 +1,17 @@
+variable "name" {}
+variable "cluster_count" {}
+variable "cluster_spec" {}
+variable "pod_cidr" {}
+variable "worker_vswitch_ids" {}
+variable "service_cidr" {}
+variable "new_nat_gateway" {}
+variable "load_balancer_spec" {}
+variable "timezone" {}
+variable "proxy_mode" {}
+variable "service_account_issuer" {}
+variable "api_audiences" {}
+variable "is_enterprise_security_group" {}
+variable "deletion_protection" {}
+variable "control_plane_log_components" {}
+variable "cluster_addons" {}
+variable "resource_group_id" {}
