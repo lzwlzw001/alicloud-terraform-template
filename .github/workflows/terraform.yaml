@@ -1,0 +1,83 @@
+name: "Terraform Infrastructure Management"
+
+on:
+  push:
+    paths:
+      - '**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment on which to deploy (dev|stage|prod)"
+        type: string
+        required: false
+        default: dev
+        
+      apply:
+        description: "terraform apply"
+        type: boolean
+        required: false
+        default: false
+env:
+      # verbosity setting for Terraform env
+      environment: ${{ github.event_name == 'push' && 'dev' || inputs.environment }}
+      # Whether to execute terraform apply
+      apply: ${{ inputs.apply  || false }}
+      # oss env config
+      # example：OSS_NAME=alsidfsoctdev03-oss
+      # cloud provider, example:aliyun location
+      provider: "alsi"
+      # brand
+      brand: "dfs"
+      # application name
+      application_name: "oct"
+      # oss index
+      index: "01"
+      work_directory: ./terraform
+      alicloud-region: ap-southeast-1
+      
+jobs:
+  tf-apply:
+    name: "Terraform Infrastructure Management"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set authentication environment variables for Alicloud
+        run: | # Due to module provider requirements we're setting dummy values for alicloud provider initialization
+          echo "ALICLOUD_ACCESS_KEY=${{ secrets.ALICLOUD_ACCESSKEY_ID || 'dummy-key' }}" >> $GITHUB_ENV
+          echo "ALICLOUD_SECRET_KEY=${{ secrets.ALICLOUD_ACCESSKEY_SECRET || 'dummy-secret' }}" >> $GITHUB_ENV
+          echo "ALICLOUD_REGION=${{ env.alicloud-region }}" >> $GITHUB_ENV
+          
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Setup env config
+        id: env-config
+        uses: DFSSGPTELTD/reusable-workflow/.github/actions/terraform-env-config@main
+        with:
+          env: ${{ env.environment }}
+          provider: ${{env.provider}}
+          brand: ${{ env.brand }}
+          application_name: ${{ env.application_name }}
+          index: ${{ env.index }}
+        
+      - name: 'Terraform Init'
+        run: terraform init -reconfigure -upgrade -backend-config="bucket=${{ steps.env-config.outputs.OSS_NAME }}"
+        working-directory: ${{ env.work_directory }}
+
+      - name: 'Terraform Plan'
+        run: pwd && terraform plan -var-file=./env/${{ env.environment }}.tfvars
+        working-directory: ${{ env.work_directory }}
+
+      - name: 'Terraform Apply'
+        if: ${{ env.apply=='true' }}
+        run: pwd && terraform apply -auto-approve -var-file=./env/${{ env.environment }}.tfvars
+        working-directory: ${{ env.work_directory }}
+        
+      - name: 'Terraform destroy'
+        run: pwd && terraform destroy -auto-approve -var-file=./env/${{ env.environment }}.tfvars
+        working-directory: ${{ env.work_directory }}
+        
+ 
+           
