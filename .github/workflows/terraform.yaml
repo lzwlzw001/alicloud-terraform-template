@@ -54,7 +54,7 @@ jobs:
 
       - name: Setup env config
         id: env-config
-        uses: DFSSGPTELTD/reusable-workflow/.github/actions/terraform-env-config@main
+        uses: lzwlzw001/reusable-workflow/.github/actions/terraform-env-config@main
         with:
           env: ${{ env.environment }}
           provider: ${{env.provider}}
